@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="import" href="./t-rex-runner/index.html">
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
@@ -17,24 +16,18 @@
         </div>
         <div id='main' style='display:none'>
             <video id="video" playsinline style=" -moz-transform: scaleX(-1);
-                -o-transform: scaleX(-1);
-                -webkit-transform: scaleX(-1);
-                transform: scaleX(-1);
-                display: none;
-                ">
+                    -o-transform: scaleX(-1);
+                    -webkit-transform: scaleX(-1);
+                    transform: scaleX(-1);
+                    display: none;
+                    ">
             </video>
             <canvas id="output" />
         </div>
-        <script src="tRexGaemCamera.js"></script>
+        <script src="jumpGameCamera.js"></script>
     </div>
-    <div style="position:relative; top:1500px;">
-        <script>
-            var link = document.querySelector('link[rel="import"]');
-            var content = link.import;
-            // Grab DOM from warning.html's document.
-            var el = content.querySelector('.offline');
-            document.body.appendChild(el.cloneNode(true));
-        </script>
+
+    <div>
     </div>
 </body>
 </html>
