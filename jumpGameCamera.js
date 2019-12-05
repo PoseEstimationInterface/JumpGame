@@ -1,6 +1,6 @@
 import * as estimation from "pose-estimation-lib.js/dist/src/estimation";
 import * as pose from "pose-estimation-lib.js/dist/src/pose";
-import "babel-polyfill"
+import "babel-polyfill";
 
 import {
   drawBoundingBox,
@@ -12,9 +12,9 @@ import {
   tryResNetButtonText,
   updateTryResNetButtonDatGuiCss
 } from "./jumpGameUtil";
-import * as posenet from '@tensorflow-models/posenet';
-import dat from 'dat.gui';
-import {detectTwoPerson} from './jumpGameUI';
+import * as posenet from "@tensorflow-models/posenet";
+import dat from "dat.gui";
+import { detectTwoPerson } from "./jumpGameUI";
 
 const videoWidth = 1280;
 const videoHeight = 720;
@@ -33,12 +33,11 @@ const defaultResNetMultiplier = 1.0;
 const defaultResNetStride = 32;
 const defaultResNetInputResolution = 250;
 
-
-
 const state = {
-  personA : false,
-  personB : false,
-}
+  personA: false,
+  personB: false
+};
+
 const guiState = {
   algorithm: "multi-pose",
   input: {
@@ -113,9 +112,9 @@ function setupGui(cameras, net) {
     guiState.inputResolution = inputResolution;
     guiState.input.inputResolution = inputResolution;
     inputResolutionController = input.add(
-        guiState.input,
-        "inputResolution",
-        inputResolutionArray
+      guiState.input,
+      "inputResolution",
+      inputResolutionArray
     );
     inputResolutionController.onChange(function(inputResolution) {
       guiState.changeToInputResolution = inputResolution;
@@ -134,9 +133,9 @@ function setupGui(cameras, net) {
     guiState.outputStride = outputStride;
     guiState.input.outputStride = outputStride;
     outputStrideController = input.add(
-        guiState.input,
-        "outputStride",
-        outputStrideArray
+      guiState.input,
+      "outputStride",
+      outputStrideArray
     );
     outputStrideController.onChange(function(outputStride) {
       guiState.changeToOutputStride = outputStride;
@@ -154,9 +153,9 @@ function setupGui(cameras, net) {
     guiState.multiplier = multiplier;
     guiState.input.multiplier = multiplier;
     multiplierController = input.add(
-        guiState.input,
-        "multiplier",
-        multiplierArray
+      guiState.input,
+      "multiplier",
+      multiplierArray
     );
     multiplierController.onChange(function(multiplier) {
       guiState.changeToMultiplier = multiplier;
@@ -175,9 +174,9 @@ function setupGui(cameras, net) {
     guiState.quantBytes = +quantBytes;
     guiState.input.quantBytes = +quantBytes;
     quantBytesController = input.add(
-        guiState.input,
-        "quantBytes",
-        quantBytesArray
+      guiState.input,
+      "quantBytes",
+      quantBytesArray
     );
     quantBytesController.onChange(function(quantBytes) {
       guiState.changeToQuantBytes = +quantBytes;
@@ -238,18 +237,18 @@ function setupGui(cameras, net) {
 
   let multi = gui.addFolder("Multi Pose Detection");
   multi
-      .add(guiState.multiPoseDetection, "maxPoseDetections")
-      .min(1)
-      .max(20)
-      .step(1);
+    .add(guiState.multiPoseDetection, "maxPoseDetections")
+    .min(1)
+    .max(20)
+    .step(1);
   multi.add(guiState.multiPoseDetection, "minPoseConfidence", 0.0, 1.0);
   multi.add(guiState.multiPoseDetection, "minPartConfidence", 0.0, 1.0);
   // nms Radius: controls the minimum distance between poses that are returned
   // defaults to 20, which is probably fine for most use cases
   multi
-      .add(guiState.multiPoseDetection, "nmsRadius")
-      .min(0.0)
-      .max(40.0);
+    .add(guiState.multiPoseDetection, "nmsRadius")
+    .min(0.0)
+    .max(40.0);
   multi.open();
 
   let output = gui.addFolder("Output");
@@ -279,11 +278,10 @@ function setupGui(cameras, net) {
   });
 }
 
-
 async function setupCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     throw new Error(
-        "Browser API navigator.mediaDevices.getUserMedia not available"
+      "Browser API navigator.mediaDevices.getUserMedia not available"
     );
   }
 
@@ -337,13 +335,6 @@ function detectPoseInRealTime(video) {
     ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
     ctx.restore();
 
-    ctx.fillText("Hello world", 10, 50);
-
-    //
-    // let poses = [];
-    // let minPoseConfidence;
-    // let minPartConfidence;
-    //
     let all_poses = await guiState.net.estimatePoses(video, {
       flipHorizontal: flipPoseHorizontal,
       decodingMethod: "multi-person",
@@ -352,33 +343,26 @@ function detectPoseInRealTime(video) {
       nmsRadius: guiState.multiPoseDetection.nmsRadius
     });
 
-    if(all_poses.filter(poses => poses["score"] >= 0.2).length === 1){
+    if (all_poses.filter(poses => poses["score"] >= 0.2).length === 1) {
       state.personA = true;
     }
 
-
-    if(all_poses.filter(poses => poses["score"] >= 0.2).length === 2){
+    if (all_poses.filter(poses => poses["score"] >= 0.2).length === 2) {
       state.personB = true;
-    }
-    else{
+    } else {
       state.personB = false;
     }
-    let persons = 0;
-    state.personA && state.personB ? persons = 2 : state.personA ? persons = 1 : 0;
-    const isTwoPerson = detectTwoPerson(persons);
-    //detect leftHandUp
 
-    //istwoperson
-    if(isTwoPerson){
-      console.log(22);
-        // data = await net.estimatePoses(video, {
-        //   decodingMethod: "multi-person",
-        //   flipHorizontal: true,
-        // });
-        // if(data.length >= 1){
-        //   console.log(data);
-        //
-        // }
+    let persons = 0;
+    if (state.personA && state.personB) {
+      persons = 2;
+    } else if (state.personA) {
+      persons = 1;
+    }
+
+    const isTwoPerson = detectTwoPerson(persons);
+    if (isTwoPerson) {
+      //
     }
 
     requestAnimationFrame(poseDetectionFrame);
@@ -388,55 +372,46 @@ function detectPoseInRealTime(video) {
 }
 
 export async function bindPage() {
-
-
-
-
   toggleLoadingUI(true);
-    net = await posenet.load({
-    architecture:"ResNet50",
-    outputStride:16,
-    inputResolution:500,
-    multiplier:1,
-    quantBytes:1,
-    });
-    console.log(11);
+  net = await posenet.load({
+    architecture: "ResNet50",
+    outputStride: 16,
+    inputResolution: 200,
+    multiplier: 1,
+    quantBytes: 1
+  });
+  console.log(11);
 
-
-  console.log("initialize !")
+  console.log("initialize !");
 
   toggleLoadingUI(false);
-
 
   try {
     video = await loadVideo();
   } catch (e) {
     let info = document.getElementById("info");
     info.textContent =
-        "this browser does not support video capture," +
-        "or this device does not have a camera";
+      "this browser does not support video capture," +
+      "or this device does not have a camera";
     info.style.display = "block";
     throw e;
   }
 
   setupGui([], net);
   detectPoseInRealTime(video);
-
 }
 
 navigator.getUserMedia =
-    navigator.getUserMedia ||
-    navigator.webkitGetUserMedia ||
-    navigator.mozGetUserMedia;
+  navigator.getUserMedia ||
+  navigator.webkitGetUserMedia ||
+  navigator.mozGetUserMedia;
 // kick off the demo
 
-class GetClass{
-  getVideo(){
+class GetClass {
+  getVideo() {
     return video;
   }
 }
-document.addEventListener('DOMContentLoaded',  function (){
+document.addEventListener("DOMContentLoaded", function() {
   bindPage();
 });
-
-
