@@ -1,5 +1,7 @@
 import * as estimation from "pose-estimation-lib.js/dist/src/estimation";
+import * as pose from "pose-estimation-lib.js/dist/src/pose";
 import "babel-polyfill"
+
 import {
   drawBoundingBox,
   drawKeypoints,
@@ -12,11 +14,14 @@ import {
 } from "./jumpGameUtil";
 import * as posenet from '@tensorflow-models/posenet';
 import dat from 'dat.gui';
+import {detectTwoPerson} from './jumpGameUI';
 
 const videoWidth = 1280;
 const videoHeight = 720;
 
 let video;
+let net;
+let data;
 
 const defaultQuantBytes = 2;
 
@@ -30,7 +35,10 @@ const defaultResNetInputResolution = 250;
 
 
 
-
+const state = {
+  personA : false,
+  personB : false,
+}
 const guiState = {
   algorithm: "multi-pose",
   input: {
@@ -316,10 +324,12 @@ function detectPoseInRealTime(video) {
   canvas.height = videoHeight;
 
   async function poseDetectionFrame() {
-    postMessage("teetetetete");
+    const flipPoseHorizontal = true;
 
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
 
-    ctx.clearRect(0, 0, videoWidth, videoHeight);
+    ctx.clearRect(0, 0, 40, 40);
 
     ctx.save();
     ctx.scale(-1, 1);
@@ -329,25 +339,72 @@ function detectPoseInRealTime(video) {
 
     ctx.fillText("Hello world", 10, 50);
 
+    //
+    // let poses = [];
+    // let minPoseConfidence;
+    // let minPartConfidence;
+    //
+    let all_poses = await guiState.net.estimatePoses(video, {
+      flipHorizontal: flipPoseHorizontal,
+      decodingMethod: "multi-person",
+      maxDetections: guiState.multiPoseDetection.maxPoseDetections,
+      scoreThreshold: guiState.multiPoseDetection.minPartConfidence,
+      nmsRadius: guiState.multiPoseDetection.nmsRadius
+    });
+
+    if(all_poses.filter(poses => poses["score"] >= 0.2).length === 1){
+      state.personA = true;
+    }
+
+
+    if(all_poses.filter(poses => poses["score"] >= 0.2).length === 2){
+      state.personB = true;
+    }
+    else{
+      state.personB = false;
+    }
+    let persons = 0;
+    state.personA && state.personB ? persons = 2 : state.personA ? persons = 1 : 0;
+    const isTwoPerson = detectTwoPerson(persons);
+    //detect leftHandUp
+
+    //istwoperson
+    if(isTwoPerson){
+      console.log(22);
+        // data = await net.estimatePoses(video, {
+        //   decodingMethod: "multi-person",
+        //   flipHorizontal: true,
+        // });
+        // if(data.length >= 1){
+        //   console.log(data);
+        //
+        // }
+    }
+
     requestAnimationFrame(poseDetectionFrame);
   }
 
   poseDetectionFrame();
 }
 
-const exportData = {"name":1,"age":2};
-export default exportData;
-
 export async function bindPage() {
-  localStorage.setItem('item',"true")
+
+
+
+
   toggleLoadingUI(true);
-  const net = await posenet.load({
-    architecture: guiState.input.architecture,
-    outputStride: guiState.input.outputStride,
-    inputResolution: guiState.input.inputResolution,
-    multiplier: guiState.input.multiplier,
-    quantBytes: guiState.input.quantBytes
-  });
+    net = await posenet.load({
+    architecture:"ResNet50",
+    outputStride:16,
+    inputResolution:500,
+    multiplier:1,
+    quantBytes:1,
+    });
+    console.log(11);
+
+
+  console.log("initialize !")
+
   toggleLoadingUI(false);
 
 
@@ -372,7 +429,6 @@ navigator.getUserMedia =
     navigator.webkitGetUserMedia ||
     navigator.mozGetUserMedia;
 // kick off the demo
-export {video};
 
 class GetClass{
   getVideo(){
