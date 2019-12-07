@@ -1,5 +1,6 @@
 import * as estimation from "pose-estimation-lib.js/dist/src/estimation";
 import * as pose from "pose-estimation-lib.js/dist/src/pose";
+import * as groundY from "pose-estimation-lib.js/dist/src/utils"
 import "babel-polyfill";
 
 import {
@@ -14,7 +15,11 @@ import {
 } from "./jumpGameUtil";
 import * as posenet from "@tensorflow-models/posenet";
 import dat from "dat.gui";
-import { detectTwoPerson } from "./jumpGameUI";
+import {
+  detectTwoPerson,
+  successReady,
+  detectedJump,
+} from "./jumpGameUI";
 
 const videoWidth = 1280;
 const videoHeight = 720;
@@ -35,7 +40,8 @@ const defaultResNetInputResolution = 250;
 
 const state = {
   personA: false,
-  personB: false
+  personB: false,
+  isReady : false,
 };
 
 const guiState = {
@@ -323,7 +329,6 @@ function detectPoseInRealTime(video) {
 
   async function poseDetectionFrame() {
     const flipPoseHorizontal = true;
-
     canvas.width = videoWidth;
     canvas.height = videoHeight;
 
@@ -343,27 +348,41 @@ function detectPoseInRealTime(video) {
       nmsRadius: guiState.multiPoseDetection.nmsRadius
     });
 
+    //정확도가 0.2 이상인 것만 필터링
     if (all_poses.filter(poses => poses["score"] >= 0.2).length === 1) {
       state.personA = true;
     }
-
     if (all_poses.filter(poses => poses["score"] >= 0.2).length === 2) {
       state.personB = true;
     } else {
       state.personB = false;
     }
 
-    let persons = 0;
-    if (state.personA && state.personB) {
-      persons = 2;
-    } else if (state.personA) {
-      persons = 1;
+    //jumpGameUI 에서 준비가 완료 됐는지 확인(화면에 gojump가 출력 되는지)
+    var h1s = document.getElementsByTagName("h1");
+    if(h1s[0].innerHTML === "go jump!!"){
+      state.isReady = true;
     }
 
-    const isTwoPerson = detectTwoPerson(persons);
-    if (isTwoPerson) {
-      //
+    //카메라에 두 명이 들어와있는지 확인
+    //const isTwoPerson = detectTwoPerson(persons);
+    if(state.isReady === false){
+      if (pose.isLeftHandUp(all_poses[0], 90)) {
+        console.log("leftUP!!!!");
+        state.isReady = successReady(true);
+        console.log(state.isReady + "++++++++++++");
+      }
     }
+    //레디가 된 상태, 게임 시작
+    else if(state.isReady === true){
+      if(pose.isJumping(all_poses[0], groundY.getGroundY(all_poses[0]))){
+        detectedJump("A")
+      }
+      if(pose.isJumping(all_poses[0], groundY.getGroundY(all_poses[0]))){
+        detectedJump("B")
+      }
+    }
+
 
     requestAnimationFrame(poseDetectionFrame);
   }
