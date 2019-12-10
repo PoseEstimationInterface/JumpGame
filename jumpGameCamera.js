@@ -1,6 +1,6 @@
 import * as estimation from "pose-estimation-lib.js/dist/src/estimation";
 import * as pose from "pose-estimation-lib.js/dist/src/pose";
-import * as groundY from "pose-estimation-lib.js/dist/src/utils"
+import * as getGroundY from "pose-estimation-lib.js/dist/src/utils"
 import "babel-polyfill";
 
 import {
@@ -71,6 +71,48 @@ const guiState = {
   },
   net: null
 };
+
+var ground1 = [0, 0];
+var groundY1 = 0;
+
+var ground2 = [0, 0];
+var groundY2 = 0;
+
+/**
+ * 바닥의 높이를 구하는 함수입니다.
+ * 최근 30프레임의 평균 발 높이를 반환합니다.
+ * @param pose 포즈 데이터 배열
+ */
+
+function arraySum(array) {
+  return array.reduce(function (prev, curr) { return prev + curr; });
+}
+
+function getA_GroundY(pose) {
+  var rightFootY = pose["keypoints"][16]["position"]["y"];
+  rightFootY -= (rightFootY - groundY1) * 0.3;
+  if (ground1.length > 30) {
+    ground1.pop();
+  }
+  if (pose["keypoints"][16]["score"] > 0.5) {
+    ground1.unshift(rightFootY);
+  }
+  groundY1 = arraySum(ground1) / ground1.length;
+  return groundY1;
+}
+
+function getB_GroundY(pose) {
+  var rightFootY = pose["keypoints"][16]["position"]["y"];
+  rightFootY -= (rightFootY - groundY2) * 0.3;
+  if (ground2.length > 30) {
+    ground2.pop();
+  }
+  if (pose["keypoints"][16]["score"] > 0.5) {
+    ground2.unshift(rightFootY);
+  }
+  groundY2 = arraySum(ground2) / ground2.length;
+  return groundY2;
+}
 
 function setupGui(cameras, net) {
   guiState.net = net;
@@ -324,9 +366,6 @@ function detectPoseInRealTime(video) {
   const canvas = document.getElementById("output");
   const ctx = canvas.getContext("2d");
 
-  canvas.width = videoWidth;
-  canvas.height = videoHeight;
-
   async function poseDetectionFrame() {
     const flipPoseHorizontal = true;
     canvas.width = videoWidth;
@@ -347,13 +386,15 @@ function detectPoseInRealTime(video) {
       scoreThreshold: guiState.multiPoseDetection.minPartConfidence,
       nmsRadius: guiState.multiPoseDetection.nmsRadius
     });
-
+    let personCount;
     //정확도가 0.2 이상인 것만 필터링
     if (all_poses.filter(poses => poses["score"] >= 0.2).length === 1) {
       state.personA = true;
+      personCount = 1;
     }
     if (all_poses.filter(poses => poses["score"] >= 0.2).length === 2) {
       state.personB = true;
+      personCount = 2;
     } else {
       state.personB = false;
     }
@@ -363,24 +404,57 @@ function detectPoseInRealTime(video) {
     if(h1s[0].innerHTML === "go jump!!"){
       state.isReady = true;
     }
-
+    let isTwoPerson = 1;
     //카메라에 두 명이 들어와있는지 확인
-    //const isTwoPerson = detectTwoPerson(persons);
-    if(state.isReady === false){
+    if(!state.isReady){
+      isTwoPerson = detectTwoPerson(personCount);
+    }
+
+    if(state.isReady === false && isTwoPerson){
       if (pose.isLeftHandUp(all_poses[0], 90)) {
         console.log("leftUP!!!!");
         state.isReady = successReady(true);
         console.log(state.isReady + "++++++++++++");
       }
     }
+
     //레디가 된 상태, 게임 시작
-    else if(state.isReady === true){
-      if(pose.isJumping(all_poses[0], groundY.getGroundY(all_poses[0]))){
+
+    else if(state.isReady === true && isTwoPerson) {
+      if (all_poses.length <= 1) {
+        alert("OUT!!!");
+      }
+
+      const y1 = getA_GroundY(all_poses[0]);
+      const y2 = getB_GroundY(all_poses[1]);
+
+      const jumpA = pose.isJumping(all_poses[0], y1);
+      const jumpB = pose.isJumping(all_poses[1], y2);
+      ctx.strokeStyle = 'red';
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      // Reset the current path
+      ctx.beginPath();
+      // Staring point (10,45)
+      ctx.moveTo(10,groundY1);
+      // End point (180,47)
+      ctx.lineTo(180,groundY1);
+      // Make the line visible
+      ctx.stroke();
+      ctx.clearRect(0, 0, videoWidth, videoHeight);
+      ctx.fillRect(0, y1, videoWidth, 3)
+
+
+      if(jumpA){
+        //alert("A")
         detectedJump("A")
       }
-      if(pose.isJumping(all_poses[0], groundY.getGroundY(all_poses[0]))){
+
+      if(jumpB){
+        //alert("B")
         detectedJump("B")
       }
+
     }
 
 

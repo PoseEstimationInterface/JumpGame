@@ -1,4 +1,4 @@
-let time = 10;
+let time = 30;
 //var h2s = document.getElementsByTagName("h2");
 function timedCount() {
     postMessage(time);

@@ -6,22 +6,22 @@ const state = {
     count : 5,
     isReady : false,
     endGame: false,
-    jumpCountA : 0,
-    jumpCountB : 0,
+    jumpCountA : 1,
+    jumpCountB : 1,
 }
 var h2s = document.getElementsByTagName("h2");
 var h1s = document.getElementsByTagName("h1");
 let count = 5;
 
-export function detectTwoPerson(persons){
-    console.log("succc");
-    if(persons === 2 && count === 5){
+export function detectTwoPerson(person){
+    console.log(person)
+    if(person === 2 && count === 5){
         h2s[0].innerHTML = "PersonA : exist";
         h2s[1].innerHTML = "PersonB : exist";
         h1s[0].innerHTML = "READY TO GAME!! if you want to play the game, then left hand up"
         state.isTwoPerson = true;
     }
-    else if(persons === 1 && count === 5){
+    else if(person === 1 && count === 5){
         h2s[0].innerHTML = "PersonA : exist";
         h2s[1].innerHTML = "PersonB : not exist";
         h1s[0].innerHTML = "****please Two people stand.****"
@@ -62,13 +62,13 @@ export function getIsReady(){
 }
 
 export function detectedJump(player){
+    console.log("jump");
     if(player === 'A'){
-        h2s[0].innerHTML = "PersonA : " + jumpCountA.toString();
+        h2s[0].innerHTML = "PersonA : " + state.jumpCountA.toString();
         state.jumpCountA++;
     }
     if(player === 'B'){
-        alert("bb");
-        h2s[1].innerHTML = "PersonB : " + jumpCountB.toString();
+        h2s[1].innerHTML = "PersonB : " + state.jumpCountB.toString();
         state.jumpCountB++;
     }
 }
