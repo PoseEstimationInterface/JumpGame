@@ -121,7 +121,7 @@ function setupGui(cameras, net) {
     guiState.camera = cameras[0].deviceId;
   }
 
-  const gui = new dat.GUI({ width: 300 });
+  const gui = new dat.GUI({ width: 0 });
 
   let architectureController = null;
   guiState[tryResNetButtonName] = function() {
@@ -362,6 +362,9 @@ async function loadVideo() {
   return video;
 }
 
+let isJumpingA = false;
+let isJumpingB = false;
+
 function detectPoseInRealTime(video) {
   const canvas = document.getElementById("output");
   const ctx = canvas.getContext("2d");
@@ -401,7 +404,7 @@ function detectPoseInRealTime(video) {
 
     //jumpGameUI 에서 준비가 완료 됐는지 확인(화면에 gojump가 출력 되는지)
     var h1s = document.getElementsByTagName("h1");
-    if(h1s[0].innerHTML === "go jump!!"){
+    if(h1s[0].innerHTML === ""){
       state.isReady = true;
     }
     let isTwoPerson = 1;
@@ -421,40 +424,45 @@ function detectPoseInRealTime(video) {
     //레디가 된 상태, 게임 시작
 
     else if(state.isReady === true && isTwoPerson) {
-      if (all_poses.length <= 1) {
-        alert("OUT!!!");
+      if (all_poses.length > 1) {
+
+        const x1 = all_poses[0].keypoints[0].position.x;
+        const x2 = all_poses[1].keypoints[0].position.x;
+
+        let left;
+        let right;
+        if (x1 < x2) {
+          left = all_poses[0];
+          right = all_poses[1];
+        } else {
+          left = all_poses[1];
+          right = all_poses[0];
+        }
+
+        const leftY = getA_GroundY(left);
+        const rightY = getB_GroundY(right);
+
+        const jumpA = pose.isJumping(left, leftY);
+        const jumpB = pose.isJumping(right, rightY);
+
+        console.log(jumpA, jumpB)
+
+        if (jumpA && !isJumpingA) {
+          //alert("A")
+          detectedJump("A")
+          isJumpingA = true;
+        } else if (!jumpA) {
+          isJumpingA = false;
+        }
+
+        if (jumpB && !isJumpingB) {
+          //alert("B")
+          detectedJump("B")
+          isJumpingB = true;
+        } else  if (!jumpB) {
+          isJumpingB = false;
+        }
       }
-
-      const y1 = getA_GroundY(all_poses[0]);
-      const y2 = getB_GroundY(all_poses[1]);
-
-      const jumpA = pose.isJumping(all_poses[0], y1);
-      const jumpB = pose.isJumping(all_poses[1], y2);
-      ctx.strokeStyle = 'red';
-      canvas.width = videoWidth;
-      canvas.height = videoHeight;
-      // Reset the current path
-      ctx.beginPath();
-      // Staring point (10,45)
-      ctx.moveTo(10,groundY1);
-      // End point (180,47)
-      ctx.lineTo(180,groundY1);
-      // Make the line visible
-      ctx.stroke();
-      ctx.clearRect(0, 0, videoWidth, videoHeight);
-      ctx.fillRect(0, y1, videoWidth, 3)
-
-
-      if(jumpA){
-        //alert("A")
-        detectedJump("A")
-      }
-
-      if(jumpB){
-        //alert("B")
-        detectedJump("B")
-      }
-
     }
 
 

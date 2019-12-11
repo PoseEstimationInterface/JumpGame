@@ -16,14 +16,14 @@ let count = 5;
 export function detectTwoPerson(person){
     console.log(person)
     if(person === 2 && count === 5){
-        h2s[0].innerHTML = "PersonA : exist";
-        h2s[1].innerHTML = "PersonB : exist";
+        h2s[0].innerHTML = "READY";
+        h2s[1].innerHTML = "READY";
         h1s[0].innerHTML = "READY TO GAME!! if you want to play the game, then left hand up"
         state.isTwoPerson = true;
     }
     else if(person === 1 && count === 5){
-        h2s[0].innerHTML = "PersonA : exist";
-        h2s[1].innerHTML = "PersonB : not exist";
+        h2s[0].innerHTML = "READY";
+        h2s[1].innerHTML = "";
         h1s[0].innerHTML = "****please Two people stand.****"
     }
     return state.isTwoPerson;
@@ -34,7 +34,7 @@ export function successReady(isReady){
             h1s[0].innerHTML = count.toString();
             count--;
             if(count === -1){
-                h1s[0].innerHTML = "go jump!!";
+                h1s[0].innerHTML = "";
                 //시간을 병렬로 돌리기 위함.
                 let w = new Worker("./timeWorker.js");
                 w.onmessage = function(e){
@@ -62,13 +62,12 @@ export function getIsReady(){
 }
 
 export function detectedJump(player){
-    console.log("jump");
     if(player === 'A'){
-        h2s[0].innerHTML = "PersonA : " + state.jumpCountA.toString();
+        h2s[0].innerHTML = state.jumpCountA.toString();
         state.jumpCountA++;
     }
     if(player === 'B'){
-        h2s[1].innerHTML = "PersonB : " + state.jumpCountB.toString();
+        h2s[1].innerHTML =  state.jumpCountB.toString();
         state.jumpCountB++;
     }
 }
